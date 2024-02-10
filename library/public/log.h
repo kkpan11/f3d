@@ -24,7 +24,7 @@ public:
   /**
    * Enumeration of verbose levels
    * =============================
-   * DEBUG: All logs are displayed.
+   * DEBUG: All logs are displayed, including from third parties.
    * INFO: Standard logging level, the default.
    * WARN: Only warnings and errors are displayed.
    * ERROR: Only errors are displayed.
@@ -112,7 +112,9 @@ public:
 
 protected:
   //! @cond
-  static void appendArg(std::stringstream&) {}
+  static void appendArg(std::stringstream&)
+  {
+  }
 
   template<typename T, typename... Args>
   static void appendArg(std::stringstream& ss, T value, Args... args)

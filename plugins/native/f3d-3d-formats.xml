@@ -29,4 +29,12 @@
     <comment>Point Cloud file</comment>
     <glob pattern="*.pts"/>
   </mime-type>
+  <mime-type type="application/vnd.ply">
+    <comment>Polygon File Format</comment>
+    <glob pattern="*.ply"/>
+  </mime-type>
+  <mime-type type="application/vnd.splat">
+    <comment>3D Gaussians Splat File Format</comment>
+    <glob pattern="*.splat"/>
+  </mime-type>
 </mime-info>

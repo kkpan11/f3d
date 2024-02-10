@@ -26,10 +26,6 @@
 #include <vtkExternalOpenGLRenderWindow.h>
 #endif
 
-#if defined(_WIN32)
-#include <vtkWindows.h>
-#endif
-
 namespace f3d::detail
 {
 class window_impl::internals
@@ -88,7 +84,7 @@ window_impl::window_impl(const options& options, Type type)
     this->Internals->RenWin->SetWindowInfo("jni");
 #endif
   }
-
+  this->Internals->RenWin->SetWindowName("f3d");
   this->Internals->RenWin->AddRenderer(this->Internals->Renderer);
   this->Internals->Camera = std::make_unique<detail::camera_impl>();
   this->Internals->Camera->SetVTKRenderer(this->Internals->Renderer);
@@ -218,14 +214,6 @@ void window_impl::Initialize(bool withColoring)
 {
   this->Internals->WithColoring = withColoring;
   this->Internals->Renderer->Initialize(this->Internals->Options.getAsString("scene.up-direction"));
-
-#if defined(_WIN32)
-  // On Windows, the Log window can get in front in some case, make sure the render window is on top
-  // on initialization
-  HWND f3dWindow = static_cast<HWND>(this->Internals->RenWin->GetGenericWindowId());
-  BringWindowToTop(f3dWindow);
-#endif
-
   this->Internals->Initialized = true;
 }
 
@@ -250,10 +238,18 @@ void window_impl::UpdateDynamicOptions()
   this->Internals->Renderer->SetInvertZoom(
     this->Internals->Options.getAsBool("interactor.invert-zoom"));
 
+  std::string splatTypeStr = this->Internals->Options.getAsString("render.splat-type");
+  int pointSize = this->Internals->Options.getAsDouble("render.point-size");
+  vtkF3DRendererWithColoring::SplatType splatType = vtkF3DRendererWithColoring::SplatType::SPHERE;
+  if (splatTypeStr == "gaussian")
+  {
+    splatType = vtkF3DRendererWithColoring::SplatType::GAUSSIAN;
+  }
+
+  this->Internals->Renderer->SetPointProperties(splatType, pointSize);
+
   this->Internals->Renderer->SetLineWidth(
     this->Internals->Options.getAsDouble("render.line-width"));
-  this->Internals->Renderer->SetPointSize(
-    this->Internals->Options.getAsDouble("render.point-size"));
   this->Internals->Renderer->ShowEdge(this->Internals->Options.getAsBool("render.show-edges"));
   this->Internals->Renderer->ShowTimer(this->Internals->Options.getAsBool("ui.fps"));
   this->Internals->Renderer->ShowFilename(this->Internals->Options.getAsBool("ui.filename"));

@@ -6,24 +6,22 @@ F3D behavior can be fully controlled from the command line using the following o
 
 Options|Default|Description
 ------|------|------
-\-\-input=\<file\>||The *input* file or files to read, can also be provided as a positional argument.
 \-\-output=\<png file\>||Instead of showing a render view and render into it, *render directly into a png file*. When used with \-\-ref option, only outputs on failure.
 \-\-no-background||Use with \-\-output to output a png file with a transparent background.
--h, \-\-help||Print *help* and exit.
-\-\-version||Show *version* information and exit.
-\-\-readers-list||List available *readers* and exit.
+-h, \-\-help||Print *help* and exit. Ignore `--verbose`.
+\-\-version||Show *version* information and exit. Ignore `--verbose`.
+\-\-readers-list||List available *readers* and exit. Ignore `--verbose`.
 \-\-config=\<config file path/name/stem\>|config|Specify the [configuration file](CONFIGURATION_FILE.md) to use. Supports absolute/relative path but also filename/filestem to search for in standard configuration file locations.
 \-\-dry-run||Do not read any configuration file and consider only the command line options.
-\-\-no-render||Print information about the first provided file (as with \-\-verbose) and exit, without rendering anything, useful to recover information about a file.
+\-\-no-render||Do not render anything and quit just after loading the first file, use with \-\-verbose to recover information about a file.
 \-\-max-size=\<size in MiB\>|-1|Prevent F3D to load a file bigger than the provided size in Mib, negative value means unlimited, useful for thumbnails.
-\-\-load-plugins=\<paths or names\>||List of plugins to load separated with a comma. Official plugins are `alembic`, `assimp`, `exodus`, `occt`. See [usage](USAGE.md) for more info.
+\-\-load-plugins=\<paths or names\>||List of plugins to load separated with a comma. Official plugins are `alembic`, `assimp`, `draco`, `exodus`, `occt`, `usd`, `vdb`. See [usage](USAGE.md) for more info.
 
 ## General Options
 
 Options|Default|Description
 ------|------|------
-\-\-verbose||Enable *verbose* mode, providing more information about the loaded data in the console output.
-\-\-quiet||Enable quiet mode, which supersede any verbose options. No console output will be generated at all.
+\-\-verbose=\<[debug\|info\|warning\|error\|quiet]\>|info| Set *verbose* level, in order to provide more information about the loaded data in the console output. If no level is providen, assume `debug`. Option parsing may ignore this flag.
 \-\-progress||Show a *progress bar* when loading the file.
 \-\-geometry-only||For certain **full scene** file formats (gltf/glb and obj),<br>reads *only the geometry* from the file and use default scene construction instead.
 \-\-group-geometries||When opening multiple files, show them all in the same scene.<br>Force geometry-only. The configuration file for the first file will be loaded.
@@ -35,6 +33,7 @@ Options|Default|Description
 -e, \-\-edges||Show the *cell edges*.
 \-\-camera-index=\<idx\>|-1|Select the scene camera to use when available in the file.<br>Any negative value means automatic camera.<br>The default scene always uses automatic camera.
 -k, \-\-trackball||Enable trackball interaction.
+\-\-animation-autoplay||Automatically start animation.
 \-\-animation-index=\<idx\>|0|Select the animation to show.<br>Any negative value means all animations (glTF only).<br>The default scene always has at most one animation.
 \-\-animation-speed-factor=\<factor\>|1|Set the animation speed factor to slow, speed up or even invert animation time.
 \-\-animation-frame-rate=\<factor\>|60|Set the animation frame rate used when playing animation interactively.
@@ -46,6 +45,7 @@ Options|Default|Description
 ------|------|------
 -o, \-\-point-sprites||Show sphere *points sprites* instead of the geometry.
 \-\-point-size=\<size\>|10.0|Set the *size* of points when showing vertices and point sprites.
+\-\-point-type=\<sphere|gaussian\>|sphere|Set the splat type when showing point sprites.
 \-\-line-width=\<size\>|1.0|Set the *width* of lines when showing edges.
 \-\-color=\<R,G,B\>|1.0, 1.0, 1.0| Set a *color* on the geometry. Multiplied with the base color texture when present. <br>Requires a default scene.
 \-\-opacity=\<opacity\>|1.0|Set *opacity* on the geometry. Multiplied with the base color texture when present. <br>Requires a default scene. Usually used with Depth Peeling option.
@@ -133,3 +133,8 @@ Some rendering options are not compatible between them, here is the precedence o
 * Raytracing (`-r`)
 * Volume (`-v`)
 * Point Sprites (`-o`)
+
+## Options syntax
+
+The `--options=value` syntax is used everywhere in this documentation, however, the syntax `--options value` can also be used, with the exception of options that have implicit values,
+`--verbose`, `--comp` and `--scalars`.

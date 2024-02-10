@@ -4,25 +4,36 @@ F3D welcomes all contributors, regardless of skill level or experience!
 
 ## Contributing as a user
 
-Contributing to F3D can be as simple as pointing out a spelling mistake on the website, 
+Contributing to F3D can be as simple as pointing out a spelling mistake on the website,
 reporting a bug you encountered, or suggesting a new feature you feel would improve the application.
 
-We use [Github](https://github.com/f3d-app/f3d) to manage the project and you can report new issues or weigh 
+We use [Github](https://github.com/f3d-app/f3d) to manage the project and you can report new issues or weigh
 in on existing ones [over there](https://github.com/f3d-app/f3d/issues).
 
 Also, do not hesitate to join our [discord](https://discord.f3d.app)!
 
 ## How to get started with development
 
-To contribute to F3D as a developer, you may want to take a look at the opened [issues](https://github.com/f3d-app/f3d/issues),
-especially, the ones with the ["good first issue"](https://github.com/f3d-app/f3d/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) label.
-If one sounds interesting to you, then you should just go ahead and comment on the issue and ask for any help or clarification needed.
-F3D maintainers will see your comment and provide guidance as needed.
+To contribute to F3D as a developer, first you may want to try and build F3D for yourself.
+If you are already familiar with software compilation, you can take a look at our [build](doc/dev/BUILD.md) guide.
+If not, you may want to look at our [getting started](doc/dev/GETTING_STARTED.md) guide, that provide steps to compile F3D.
 
-You can then fix the issue in your side and contribute it to the F3D repository,
-by following the workflow described below.
+Once you are able to build F3D, you may want to take a look at the opened [issues](https://github.com/f3d-app/f3d/issues)!
+If you are a beginner, you may want to look at ["good first issues"](https://github.com/f3d-app/f3d/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22).
+If you already have some experience with programming and contribution, definitely look at ["help wanted"](https://github.com/f3d-app/f3d/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22) issues.
+If an issue is interesting to you and is not yet assigned, then you should just go ahead, *comment on the issue* and ask for any help or clarification needed.
+F3D maintainers will see your comment, assign the issue to you and provide guidance as needed.
 
-Another way to get started is to improve the documentation.
+To get involved more deeply, please take a look at the [roadmaps](doc/dev/ROADMAPS_AND_RELEASES.md) for the upcoming releases.
+
+It is also recommended to reach out on [discord](https://discord.f3d.app) to simplify communication, but it is not required.
+
+You can then fix the issue or implement the feature on your side and contribute it to the F3D repository, by following the workflow described below.
+
+Of course, if you are already using F3D and want to improve it for your specific needs, because you want a feature or found a bug,
+that is definitely possible. Feel free to reach out for guidance by opening an issue or asking on [discord](https://discord.f3d.app).
+
+Another way to get started is to improve the documentation, look for typos, improve the examples and the gallery. Please share any ideas you may have!
 
 ## F3D Development workflow
 
@@ -41,7 +52,7 @@ It also means that adding a new feature or behavior means adding a associated te
 Make sure to check the results for yourself, and ask for help if needed.
 
 F3D continuous integration will also check the coverage as it is a good way to evaluate if new features are being tested or not.
-When adding code to F3D, always to to cover it by adding/modifying [tests](doc/dev/TESTING.md).
+When adding code to F3D, always try to cover it by adding/modifying [tests](doc/dev/TESTING.md).
 
 F3D continuous integration also check formatting using clang-format and will inform you if changes needs to be made.
 However, some [formatting rules](doc/dev/CODING_STYLE.md) are not enforced by clang-format and will be checked during the review process.
@@ -69,7 +80,7 @@ VTKExtensions are separated in different modules.
 - Rendering, that depends on Core and implements the rendering specificities of F3D
 - Applicative, the depends on all other VTKExtension modules and provide services for the libf3d library
 
-The libf3d implements the whole logic of instancing and manipulating the different VTK classes, it is fully documented [here](doc/libf3d/README.md).
+The libf3d implements the whole logic of instancing and manipulating the different VTK classes, it is fully documented [here](doc/libf3d/README_LIBF3D.md).
 
 The F3D application itself uses the libf3d but adds an applicative layer on top of it, especially the handling of [command line options](doc/user/OPTIONS.md)
 and [configuration file](doc/user/CONFIGURATION_FILE.md).

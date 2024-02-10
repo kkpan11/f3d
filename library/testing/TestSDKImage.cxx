@@ -1,12 +1,31 @@
 #include <image.h>
 
 #include <algorithm>
+#include <fstream>
 #include <functional>
 #include <iostream>
 #include <random>
+#include <sstream>
 
 int TestSDKImage(int argc, char* argv[])
 {
+  // check supported formats
+  std::vector<std::string> formats = f3d::image::getSupportedFormats();
+
+  if (std::find(formats.begin(), formats.end(), ".png") == formats.end())
+  {
+    std::cerr << "PNG is not in the list of supported files" << std::endl;
+    return EXIT_FAILURE;
+  }
+
+#if F3D_MODULE_EXR
+  if (std::find(formats.begin(), formats.end(), ".exr") == formats.end())
+  {
+    std::cerr << "EXR is not in the list of supported files" << std::endl;
+    return EXIT_FAILURE;
+  }
+#endif
+
   constexpr unsigned int width = 64;
   constexpr unsigned int height = 64;
   constexpr unsigned int channels = 3;
@@ -27,6 +46,38 @@ int TestSDKImage(int argc, char* argv[])
   generated.save(std::string(argv[2]) + "TestSDKImage.jpg", f3d::image::SaveFormat::JPG);
   generated.save(std::string(argv[2]) + "TestSDKImage.tif", f3d::image::SaveFormat::TIF);
   generated.save(std::string(argv[2]) + "TestSDKImage.bmp", f3d::image::SaveFormat::BMP);
+
+  // test saveBuffer in different formats
+  std::vector<unsigned char> bufferPNG = generated.saveBuffer();
+  if (bufferPNG.size() == 0)
+  {
+    std::cerr << "PNG buffer empty" << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  std::vector<unsigned char> bufferJPG = generated.saveBuffer(f3d::image::SaveFormat::JPG);
+  if (bufferJPG.size() == 0)
+  {
+    std::cerr << "JPG buffer empty" << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  try
+  {
+    generated.saveBuffer(f3d::image::SaveFormat::TIF);
+    std::cerr << "An exception has not been thrown when saving buffer to TIF format" << std::endl;
+    return EXIT_FAILURE;
+  }
+  catch (const f3d::image::write_exception&)
+  {
+  }
+
+  std::vector<unsigned char> bufferBMP = generated.saveBuffer(f3d::image::SaveFormat::BMP);
+  if (bufferBMP.size() == 0)
+  {
+    std::cerr << "BMP buffer empty" << std::endl;
+    return EXIT_FAILURE;
+  }
 
   // test constructor with different channel sizes
   f3d::image img16(width, height, channels, f3d::image::ChannelType::SHORT);
@@ -178,6 +229,48 @@ int TestSDKImage(int argc, char* argv[])
   {
     std::cerr << "Move assignment failed" << std::endl;
     return EXIT_FAILURE;
+  }
+
+  {
+    try
+    {
+      f3d::image(3, 3, 1, f3d::image::ChannelType::BYTE).toTerminalText();
+      return EXIT_FAILURE; // expected to throw (wrong channel count)
+    }
+    catch (const std::invalid_argument& e)
+    {
+    }
+
+    try
+    {
+      f3d::image(3, 3, 4, f3d::image::ChannelType::SHORT).toTerminalText();
+      return EXIT_FAILURE; // expected to throw (wrong channel type)
+    }
+    catch (const std::invalid_argument& e)
+    {
+    }
+
+    const auto fileToString = [](const std::string& path)
+    {
+      std::ifstream file(path);
+      std::stringstream ss;
+      ss << file.rdbuf();
+      return ss.str();
+    };
+
+    if (f3d::image(std::string(argv[1]) + "/data/toTerminalText-rgb.png").toTerminalText() !=
+      fileToString(std::string(argv[1]) + "/data/toTerminalText-rgb.txt"))
+    {
+      std::cerr << "toTerminalText() (RGB image) failed" << std::endl;
+      return EXIT_FAILURE;
+    }
+
+    if (f3d::image(std::string(argv[1]) + "/data/toTerminalText-rgba.png").toTerminalText() !=
+      fileToString(std::string(argv[1]) + "/data/toTerminalText-rgba.txt"))
+    {
+      std::cerr << "toTerminalText() (RGBA image) failed" << std::endl;
+      return EXIT_FAILURE;
+    }
   }
 
   return EXIT_SUCCESS;

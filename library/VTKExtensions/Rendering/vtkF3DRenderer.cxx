@@ -140,6 +140,9 @@ vtkF3DRenderer::vtkF3DRenderer()
   this->EnvMapLookupTable = vtkF3DCachedLUTTexture::New();
   this->EnvMapPrefiltered = vtkF3DCachedSpecularTexture::New();
 #endif
+#if VTK_VERSION_NUMBER >= VTK_VERSION_CHECK(9, 2, 20221220)
+  this->EnvMapPrefiltered->HalfPrecisionOff();
+#endif
 
   // Init actors
   vtkNew<vtkTextProperty> textProp;
@@ -484,11 +487,21 @@ void vtkF3DRenderer::ConfigureGridUsingCurrentActors()
       }
 
       double gridPos[3] = { 0, 0, 0 };
-      if (!this->GridAbsolute)
+      if (this->GridAbsolute)
       {
         for (int i = 0; i < 3; i++)
         {
-          double size = bounds[2 * i + 1] - bounds[2 * i];
+          gridPos[i] = this->UpVector[i] ? 0 : 0.5 * (bounds[2 * i] + bounds[2 * i + 1]);
+        }
+      }
+      else
+      {
+        for (int i = 0; i < 3; i++)
+        {
+          // a small margin is added to the size to avoid z-fighting if large translucent
+          // triangles are exactly aligned with the grid bounds
+          constexpr double margin = 1.0001;
+          double size = margin * (bounds[2 * i + 1] - bounds[2 * i]);
           gridPos[i] = 0.5 * (bounds[2 * i] + bounds[2 * i + 1] - this->UpVector[i] * size);
         }
       }
@@ -504,12 +517,15 @@ void vtkF3DRenderer::ConfigureGridUsingCurrentActors()
       gridMapper->SetUnitSquare(tmpUnitSquare);
       gridMapper->SetSubdivisions(this->GridSubdivisions);
       gridMapper->SetUpIndex(this->UpIndex);
+      if (this->GridAbsolute)
+        gridMapper->SetOriginOffset(-gridPos[0], -gridPos[1], -gridPos[2]);
 
       this->GridActor->GetProperty()->SetColor(0.0, 0.0, 0.0);
       this->GridActor->ForceTranslucentOn();
       this->GridActor->SetPosition(gridPos);
       this->GridActor->SetMapper(gridMapper);
       this->GridActor->UseBoundsOff();
+      this->GridActor->PickableOff();
       this->GridConfigured = true;
     }
   }
@@ -797,20 +813,19 @@ void vtkF3DRenderer::ConfigureHDRILUT()
 #if VTK_VERSION_NUMBER >= VTK_VERSION_CHECK(9, 2, 20221220)
   if (this->GetUseImageBasedLighting() && !this->HasValidHDRILUT)
   {
+    vtkF3DCachedLUTTexture* lut = vtkF3DCachedLUTTexture::SafeDownCast(this->EnvMapLookupTable);
+    assert(lut);
+
     // Check LUT cache
     std::string lutCachePath = this->CachePath + "/lut.vti";
     bool lutCacheExists = vtksys::SystemTools::FileExists(lutCachePath, true);
     if (lutCacheExists)
     {
-      vtkF3DCachedLUTTexture* lut = vtkF3DCachedLUTTexture::SafeDownCast(this->EnvMapLookupTable);
       lut->SetFileName(lutCachePath.c_str());
       lut->UseCacheOn();
     }
     else
     {
-      // Create LUT cache file
-      vtkF3DCachedLUTTexture* lut = vtkF3DCachedLUTTexture::SafeDownCast(this->EnvMapLookupTable);
-      assert(lut);
       if (!lut->GetTextureObject() || !this->HasValidHDRILUT)
       {
         lut->UseCacheOff();
@@ -884,21 +899,19 @@ void vtkF3DRenderer::ConfigureHDRISpecular()
 #if VTK_VERSION_NUMBER >= VTK_VERSION_CHECK(9, 2, 20221220)
   if (this->GetUseImageBasedLighting() && !this->HasValidHDRISpec)
   {
+    vtkF3DCachedSpecularTexture* spec =
+      vtkF3DCachedSpecularTexture::SafeDownCast(this->EnvMapPrefiltered);
+    assert(spec);
+
     // Check specular cache
     std::string specCachePath;
     if (this->CheckForSpecCache(specCachePath))
     {
-      vtkF3DCachedSpecularTexture* spec =
-        vtkF3DCachedSpecularTexture::SafeDownCast(this->EnvMapPrefiltered);
       spec->SetFileName(specCachePath.c_str());
       spec->UseCacheOn();
     }
     else
     {
-      // Create specular cache file
-      vtkF3DCachedSpecularTexture* spec =
-        vtkF3DCachedSpecularTexture::SafeDownCast(this->EnvMapPrefiltered);
-      assert(spec);
       if (!spec->GetTextureObject() || !this->HasValidHDRISpec)
       {
         spec->UseCacheOff();
@@ -911,7 +924,7 @@ void vtkF3DRenderer::ConfigureHDRISpecular()
       unsigned int size = spec->GetPrefilterSize();
 
       vtkNew<vtkMultiBlockDataSet> mb;
-      mb->SetNumberOfBlocks(6 * nbLevels);
+      mb->SetNumberOfBlocks(nbLevels);
 
       for (unsigned int i = 0; i < nbLevels; i++)
       {
@@ -925,12 +938,11 @@ void vtkF3DRenderer::ConfigureHDRISpecular()
       writer->SetCompressorTypeToNone();
       writer->SetDataModeToAppended();
       writer->EncodeAppendedDataOff();
+      writer->SetHeaderTypeToUInt64();
       writer->SetFileName(specCachePath.c_str());
       writer->SetInputData(mb);
       writer->Write();
     }
-
-    this->GetEnvMapPrefiltered()->HalfPrecisionOff();
     this->HasValidHDRISpec = true;
   }
 #endif
@@ -1413,6 +1425,15 @@ void vtkF3DRenderer::Render()
   std::string str = std::to_string(fps);
   str += " fps";
   this->TimerActor->SetInput(str.c_str());
+}
+
+//----------------------------------------------------------------------------
+void vtkF3DRenderer::ResetCameraClippingRange()
+{
+  const bool gridUseBounds = this->GridActor->GetUseBounds();
+  this->GridActor->UseBoundsOn();
+  this->Superclass::ResetCameraClippingRange();
+  this->GridActor->SetUseBounds(gridUseBounds);
 }
 
 //----------------------------------------------------------------------------

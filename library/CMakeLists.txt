@@ -67,6 +67,7 @@ set(F3D_SOURCE_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/src/loader_impl.cxx
   ${CMAKE_CURRENT_SOURCE_DIR}/src/log.cxx
   ${CMAKE_CURRENT_SOURCE_DIR}/src/options.cxx
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/types.cxx
   ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.cxx
   ${CMAKE_CURRENT_SOURCE_DIR}/src/window_impl.cxx
   )
@@ -176,13 +177,27 @@ if(F3D_STRICT_BUILD AND MSVC)
   target_compile_definitions(libf3d PRIVATE _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS)
 endif()
 
+if(APPLE)
+  set_target_properties(libf3d PROPERTIES INSTALL_RPATH "@loader_path")
+elseif(UNIX)
+  set_target_properties(libf3d PROPERTIES INSTALL_RPATH "$ORIGIN")
+endif()
+
 if (APPLE OR UNIX)
   # Make sure rpath is correctly set for libf3d
   get_target_property(target_type VTK::CommonCore TYPE)
   if (target_type STREQUAL SHARED_LIBRARY)
-    set_target_properties(libf3d PROPERTIES INSTALL_RPATH "$<TARGET_FILE_DIR:VTK::CommonCore>")
+    set_target_properties(libf3d PROPERTIES BUILD_RPATH "$<TARGET_FILE_DIR:VTK::CommonCore>")
   endif ()
 endif ()
+
+if(UNIX AND NOT APPLE)
+  option(F3D_LINUX_LIBRARY_LINK_ATOMIC "Link with libatomic" OFF)
+  mark_as_advanced(F3D_LINUX_LIBRARY_LINK_ATOMIC)
+  if(F3D_LINUX_LIBRARY_LINK_ATOMIC)
+    target_link_libraries(libf3d PRIVATE atomic)
+  endif()
+endif()
 
 # Testing
 if(BUILD_TESTING)

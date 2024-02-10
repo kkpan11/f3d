@@ -32,12 +32,16 @@ public:
   /**
    * Disable base class features
    */
-  void OnChar() override {}
+  void OnChar() override
+  {
+  }
 
   /**
    * Disable base class features
    */
-  void OnTimer() override {}
+  void OnTimer() override
+  {
+  }
 
   /**
    * Handle drop files
@@ -57,6 +61,11 @@ public:
   void Pan() override;
   void Dolly() override;
   ///@}
+
+  /**
+   * Dolly the renderer's camera to a specific point
+   */
+  static void DollyToPosition(double fact, int* position, vtkRenderer* renderer);
 
   /**
    * Overridden to rotate the skybox as well

@@ -19,6 +19,7 @@
 #include <Poly_Triangulation.hxx>
 #include <Quantity_Color.hxx>
 #include <STEPControl_Reader.hxx>
+#include <Standard_Handle.hxx>
 #include <Standard_PrimitiveTypes.hxx>
 #include <Storage_StreamTypeMismatchError.hxx>
 #include <TColgp_Array1OfVec.hxx>
@@ -133,7 +134,7 @@ public:
           uvs->InsertNextTypedTuple(fn);
         }
 
-        std::vector<vtkIdType> polyline(nbV - 1);
+        std::vector<vtkIdType> polyline(nbV);
         std::iota(polyline.begin(), polyline.end(), shift);
         linesCells->InsertNextCell(polyline.size(), polyline.data());
 
@@ -142,7 +143,8 @@ public:
         {
           std::array<unsigned char, 3> rgb = { 0, 0, 0 };
           Quantity_Color aColor;
-          if (this->ColorTool->GetColor(edge, XCAFDoc_ColorCurv, aColor))
+          if (this->ColorTool->GetColor(edge, XCAFDoc_ColorCurv, aColor) ||
+            this->ColorTool->GetColor(shape, XCAFDoc_ColorCurv, aColor))
           {
             rgb[0] = static_cast<unsigned char>(255.0 * aColor.Red());
             rgb[1] = static_cast<unsigned char>(255.0 * aColor.Green());
@@ -248,7 +250,8 @@ public:
         {
           std::array<unsigned char, 3> rgb = { 255, 255, 255 };
           Quantity_Color aColor;
-          if (this->ColorTool->GetColor(face, XCAFDoc_ColorSurf, aColor))
+          if (this->ColorTool->GetColor(face, XCAFDoc_ColorSurf, aColor) ||
+            this->ColorTool->GetColor(shape, XCAFDoc_ColorSurf, aColor))
           {
             rgb[0] = static_cast<unsigned char>(255.0 * aColor.Red());
             rgb[1] = static_cast<unsigned char>(255.0 * aColor.Green());
@@ -423,7 +426,10 @@ vtkF3DOCCTReader::~vtkF3DOCCTReader() = default;
 class ProgressIndicator : public Message_ProgressIndicator
 {
 public:
-  explicit ProgressIndicator(vtkF3DOCCTReader* reader) { this->Reader = reader; }
+  explicit ProgressIndicator(vtkF3DOCCTReader* reader)
+  {
+    this->Reader = reader;
+  }
 
 protected:
   void Show(const Message_ProgressScope&, const Standard_Boolean) override

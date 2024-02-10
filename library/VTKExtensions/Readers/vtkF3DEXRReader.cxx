@@ -11,6 +11,7 @@
 #include <ImfRgbaFile.h>
 
 #include <sstream>
+#include <thread>
 
 vtkStandardNewMacro(vtkF3DEXRReader);
 
@@ -29,6 +30,10 @@ void vtkF3DEXRReader::PrintSelf(ostream& os, vtkIndent indent)
 //------------------------------------------------------------------------------
 void vtkF3DEXRReader::ExecuteInformation()
 {
+  // XXX: Needed because of VTK initialize file pattern in the constructor for some reasons
+  delete[] this->FilePattern;
+  this->FilePattern = nullptr;
+
   // Setup filename to read the header
   this->ComputeInternalFileName(this->DataExtent[4]);
   if (this->InternalFileName == nullptr || this->InternalFileName[0] == '\0')
@@ -77,7 +82,7 @@ int vtkF3DEXRReader::CanReadFile(const char* fname)
   }
 
   // The file must begin with magic number 76 2F 31 01
-  if ((ifs.get() != 0x76) && (ifs.get() != 0x2F) && (ifs.get() != 0x31) && (ifs.get() != 0x01))
+  if ((ifs.get() != 0x76) || (ifs.get() != 0x2F) || (ifs.get() != 0x31) || (ifs.get() != 0x01))
   {
     ifs.close();
     return 0;
@@ -97,18 +102,20 @@ void vtkF3DEXRReader::ExecuteDataWithInformation(vtkDataObject* output, vtkInfor
     return;
   }
 
-  if (this->InternalFileName == nullptr)
+  vtkFloatArray* scalars = vtkFloatArray::SafeDownCast(data->GetPointData()->GetScalars());
+  if (!scalars)
   {
-    vtkErrorMacro(<< "Either a FileName or FilePrefix must be specified.");
+    vtkErrorMacro(<< "Could not find expected scalar array");
     return;
   }
 
-  vtkFloatArray* scalars = vtkFloatArray::SafeDownCast(data->GetPointData()->GetScalars());
   scalars->SetName("Pixels");
   float* dataPtr = scalars->GetPointer(0);
 
   try
   {
+    assert(this->InternalFileName);
+    Imf::setGlobalThreadCount(std::thread::hardware_concurrency());
     Imf::RgbaInputFile file(this->InternalFileName);
 
     Imf::Array2D<Imf::Rgba> pixels(this->GetHeight(), this->GetWidth());

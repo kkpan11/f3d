@@ -104,15 +104,12 @@ public:
     }
     catch (const std::bad_variant_access&)
     {
-      std::string error = "Trying to get option reference " + name + " with incompatible type";
-      log::error(error);
-      throw options::incompatible_exception(error + "\n");
+      throw options::incompatible_exception(
+        "Trying to get option reference " + name + " with incompatible type");
     }
     catch (const std::out_of_range&)
     {
-      std::string error = "Option " + name + " does not exist";
-      log::error(error);
-      throw options::inexistent_exception(error + "\n");
+      throw options::inexistent_exception("Option " + name + " does not exist");
     }
   }
 
@@ -137,6 +134,7 @@ options::options()
   detail::init::initialize();
 
   // Scene
+  this->Internals->init("scene.animation.autoplay", false);
   this->Internals->init("scene.animation.index", 0);
   this->Internals->init("scene.animation.speed-factor", 1.0);
   this->Internals->init("scene.animation.time", 0.0);
@@ -148,6 +146,7 @@ options::options()
   this->Internals->init("render.show-edges", false);
   this->Internals->init("render.line-width", 1.0);
   this->Internals->init("render.point-size", 10.0);
+  this->Internals->init("render.splat-type", std::string("sphere"));
   this->Internals->init("render.grid.enable", false);
   this->Internals->init("render.grid.absolute", false);
   this->Internals->init("render.grid.unit", 0.0);

@@ -3,8 +3,8 @@ include(CMakeDependentOption)
 
 # Generic CMake variables, should be done before project()
 set(output_postfix "")
-get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
-if(${is_multi_config})
+get_property(F3D_MULTI_CONFIG_GENERATOR GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+if(${F3D_MULTI_CONFIG_GENERATOR})
   set(output_postfix "_$<CONFIG>")
   if(NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "Multi-config types" FORCE)
@@ -30,10 +30,17 @@ include(f3dVersion)
 
 # Handle F3D_VERSION
 set(F3D_MAJOR_VERSION 2)
-set(F3D_MINOR_VERSION 1)
+set(F3D_MINOR_VERSION 3)
 set(F3D_PATCH_VERSION 0)
 set(F3D_VERSION ${F3D_MAJOR_VERSION}.${F3D_MINOR_VERSION}.${F3D_PATCH_VERSION})
-set(F3D_VERSION_FULL ${F3D_VERSION})
+
+set(F3D_PATCH_VERSION_EXTRA "")
+if(F3D_PATCH_VERSION_EXTRA STREQUAL "")
+  set(F3D_VERSION_FULL ${F3D_VERSION})
+else()
+  set(F3D_VERSION_FULL ${F3D_VERSION}-${F3D_PATCH_VERSION_EXTRA})
+endif()
+
 find_package(Git QUIET)
 f3d_determine_version("${CMAKE_CURRENT_SOURCE_DIR}" "${GIT_EXECUTABLE}" "F3D")
 
@@ -61,6 +68,8 @@ if (F3D_USE_EXTERNAL_NLOHMANN_JSON)
 endif ()
 
 # VTK dependency
+# Optional components should list VTK modules
+# needed by plugins and optional modules
 find_package(VTK 9.0 REQUIRED
   COMPONENTS
     CommonCore
@@ -89,6 +98,7 @@ find_package(VTK 9.0 REQUIRED
     opengl
   OPTIONAL_COMPONENTS
     IOExodus
+    IOOpenVDB
     RenderingExternal
     RenderingRayTracing)
 message(STATUS "VTK ${VTK_VERSION} found")
@@ -233,3 +243,14 @@ if (F3D_BUILD_APPLICATION)
   install(FILES doc/THIRD_PARTY_LICENSES.md
     DESTINATION ${F3D_LIC_DIR} COMPONENT licenses)
 endif ()
+
+# Check that a LFS data file is big enough to be an actual file
+file(SIZE "${F3D_SOURCE_DIR}/testing/data/dragon.vtu" f3d_lfs_file_size)
+if (f3d_lfs_file_size LESS_EQUAL 500)
+  if(BUILD_TESTING)
+    message(FATAL_ERROR "Building tests without LFS data will result in non fonctionning tests, please fetch LFS data or disable BUILD_TESTING. Aborting.")
+  endif()
+  if (F3D_BINDINGS_PYTHON)
+    message(WARNING "Building python binding without LFS data is supported but testing using pytest will not be, please fetch LFS data to avoid this.")
+  endif()
+endif()

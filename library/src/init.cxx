@@ -32,9 +32,8 @@ void init::initialize()
 //----------------------------------------------------------------------------
 init::init()
 {
-#if NDEBUG
+  // Can be overridden by calling log::setVerboseLevel
   vtkObject::GlobalWarningDisplayOff();
-#endif
 
   // Disable vtkLogger in case VTK was built with log support
   vtkLogger::SetStderrVerbosity(vtkLogger::VERBOSITY_OFF);
@@ -47,6 +46,10 @@ init::init()
   vtkNew<vtkF3DObjectFactory> factory;
   vtkObjectFactory::RegisterFactory(factory);
   vtkObjectFactory::SetAllEnableFlags(0, "vtkPolyDataMapper", "vtkOpenGLPolyDataMapper");
+
+#if VTK_VERSION_NUMBER >= VTK_VERSION_CHECK(9, 3, 20240203)
+  vtkObjectFactory::SetAllEnableFlags(0, "vtkPointGaussianMapper", "vtkOpenGLPointGaussianMapper");
+#endif
 
 #ifdef __EMSCRIPTEN__
   vtkObjectFactory::SetAllEnableFlags(0, "vtkRenderWindow", "vtkOpenGLRenderWindow");

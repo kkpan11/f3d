@@ -4,6 +4,14 @@ inputs:
   arch:
     description: 'Android arch to build'
     required: true
+  ndk_version:
+    description: 'Version of the Android NDK to download'
+    required: false
+    default: 'r26b'
+  api_level:
+    description: 'Android API level'
+    required: false
+    default: '27'
   vtk_version:
     description: 'VTK version'
     required: false
@@ -12,6 +20,11 @@ inputs:
 runs:
   using: "composite"
   steps:
+
+    - name: Check required inputs
+      shell: bash
+      run: |
+        [[ "${{inputs.arch}}" ]] || { echo "arch input is empty" ; exit 1; }
 
     - name: Dependencies Dir
       shell: bash
@@ -23,15 +36,15 @@ runs:
       working-directory: ${{github.workspace}}
       run: |
         apt-get install unzip
-        wget https://dl.google.com/android/repository/android-ndk-${{env.NDK_VERSION}}-linux-x86_64.zip
-        unzip -qq android-ndk-${{env.NDK_VERSION}}-linux-x86_64.zip
-        mv android-ndk-${{env.NDK_VERSION}} android-ndk
+        wget https://dl.google.com/android/repository/android-ndk-${{inputs.ndk_version}}-linux.zip
+        unzip -qq android-ndk-${{inputs.ndk_version}}-linux.zip
+        mv android-ndk-${{inputs.ndk_version}} android-ndk
 
     - name: Install VTK dependency
       uses: ./source/.github/actions/vtk-android-install-dep
       with:
         arch: ${{inputs.arch}}
-        api_level: ${{env.API_LEVEL}}
+        api_level: ${{inputs.api_level}}
         vtk_version: ${{inputs.vtk_version}}
         vtk_sha_file: ./source/.github/actions/vtk_commit_sha
 
@@ -53,7 +66,7 @@ runs:
         -DCMAKE_FIND_ROOT_PATH=$(pwd)/../dependencies/vtk_build/CMakeExternals/Install/vtk-android/
         -DCMAKE_INSTALL_PREFIX:PATH=../install
         -DCMAKE_SYSTEM_NAME=Android
-        -DCMAKE_SYSTEM_VERSION=${{env.API_LEVEL}}
+        -DCMAKE_SYSTEM_VERSION=${{inputs.api_level}}
         -DF3D_BINDINGS_JAVA=ON
         -DF3D_PLUGIN_BUILD_EXODUS=OFF
         -DF3D_STRICT_BUILD=ON
@@ -62,3 +75,16 @@ runs:
       shell: bash
       working-directory: ${{github.workspace}}/build
       run: cmake --build . --parallel 2 --target install
+
+    - name: Upload native library
+      uses: actions/upload-artifact@v4
+      with:
+        path: ./build/lib/libf3d-java.so
+        name: f3d-android-native-${{inputs.arch}}
+
+    - name: Upload Java package
+      if: inputs.arch == 'arm64-v8a' # avoid duplication
+      uses: actions/upload-artifact@v4
+      with:
+        path: ./build/java/f3d.jar
+        name: f3d-android-jar

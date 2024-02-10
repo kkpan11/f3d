@@ -21,6 +21,11 @@ runs:
   using: "composite"
   steps:
 
+    - name: Check required inputs
+      shell: bash
+      run: |
+        [[ "${{ inputs.arch }}" ]] || { echo "arch input is empty" ; exit 1; }
+
     - name: Recover VTK Short SHA from file
       if: |
         steps.cache-vtk.outputs.cache-hit != 'true' &&
@@ -39,7 +44,7 @@ runs:
 
     - name: Cache VTK
       id: cache-vtk
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: dependencies/vtk_build
         key: vtk-android-${{env.VTK_SHA_OR_TAG}}-${{inputs.api_level}}-${{inputs.arch}}-0
@@ -52,7 +57,7 @@ runs:
 
     - name: Checkout VTK
       if: steps.cache-vtk.outputs.cache-hit != 'true'
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         repository: Kitware/VTK
         submodules: true
